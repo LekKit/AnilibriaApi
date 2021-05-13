@@ -1,3 +1,4 @@
+
 #include <iostream>
 #include <string>
 #include <vector>
@@ -11,9 +12,10 @@ static std::string url_builder(std::unordered_map<std::string, std::string> para
   std::string url_addition;
   for (auto i : params) {
     if (i.second != "") {
-      url.append("&" + i.first + "=" + std::to_string(i.second));
+      url_addition.append("&" + i.first + "=" + std::to_string(i.second));
+    }
+    return url_addition.substr(1, -1);
   }
-  return url_addition.substr(1, -1);
 }
 
 static size_t write_callback(char* contents, size_t size, size_t nmemb, void* ptr) {
@@ -28,6 +30,12 @@ static size_t header_callback(char* header, size_t size, size_t nmemb, void* ptr
 
     return size * nmemb;
 };
+
+/*
+STATIC DECLORATION ENDS HERE
+AnilibriaAPI CONSTRUCTORS DECLORATION STARTS HERE
+*/
+
 
 
 anilibria::AnilibriaAPI::AnilibriaAPI(std::string session) {
@@ -50,6 +58,33 @@ anilibria::AnilibriaAPI::AnilibriaAPI(std::string base_url, std::string auth_url
   this->auth_url = auth_url;
   this->session = session;
 };
+
+/*
+AnilibriaAPI CONSTRUCTORS DECLORATION ENDS HERE
+PRIVATE FUNCTIONS DECLORATION STARTS HERE
+*/
+
+void anilibria::AnilibriaAPI::set_error_info() {
+  error_occured = false;
+}
+
+void anilibria::AnilibriaAPI::set_error_info(nlohmann::json jsonarray) {
+  error_occured = true;
+  last_error = anilibria::Error(jsonarray);
+
+}
+
+void anilibria::AnilibriaAPI::set_error_info(int error_code, std::string error_msg) {
+  error_occured = true;
+  last_error = anilibria::Error;
+  last_error.code = error_code;
+  last_error.message = error_msg;
+}
+
+/*
+PRIVATE FUNCTIONS DECLORATION ENDS HERE
+PULIC FUNCTIONS DECLORATION STARTS HERE
+*/
 
 
 std::string anilibria::AnilibriaAPI::auth(std::string mail, std::string passwd) {
@@ -81,14 +116,19 @@ std::string anilibria::AnilibriaAPI::auth(std::string mail, std::string passwd) 
   {
     nlohmann::json jsonobj = nlohmann::json::parse(response_body);
 
-    if (response_body["err"]=="ok") {
+    if (jsonobj["err"]=="ok") {
       std::string token;
       token = response_header.substr(response_header.find("Set-Cookie: ")+22, -1);
       token = token.substr(0, token.find(";"));
       session = token;
 
+      this->set_error_info();
       curl_easy_cleanup(curl_handle);
       return token;
+    } else {
+      anilibria::AnilibriaAPI::set_error_info(-1, jsonobj["mes"]);
+      curl_easy_cleanup(curl_handle);
+
     }
   };
   return "";
@@ -104,9 +144,8 @@ bool anilibria::AnilibriaAPI::logout(){
   }
 }
 
-std::vector<anilibria::Title> get_titles(std::vector<anilibria::TitleRequest> request) {
+std::vector<anilibria::Title> anilibria::AnilibriaAPI::get_titles(std::vector<anilibria::TitleRequest> request) {
   std::string url = base_url + "/" + version + "/" + "getTitles?";
-  std::string response_body;
   std::string id_list;
   std::string code_list;
   std::vector<anilibria::Title> titles();
@@ -145,18 +184,23 @@ std::vector<anilibria::Title> get_titles(std::vector<anilibria::TitleRequest> re
       if (!res) {
         if (!jsonarray.contains("error")) {
           for (auto it : jsonarray) titles.push_back(anilibria::Title(it, this));
+          this->set_error_info();
+        } else {
+          this->set_error_info(anilibria::Error(jsonarray));
         }
+      } else {
+        this->set_error_info(res, "CURL_ERROR");
       }
+      curl_easy_cleanup(curl_handle);
       return titles;
     }
   }
 
 }
 
-std::vector<anilibria::Title> get_updates(anilibria::AdditionalFields request) {
+std::vector<anilibria::Title> anilibria::AnilibriaAPI::get_updates(anilibria::AdditionalFields request) {
   std::string url = base_url + "/" + version + "/" + "getUpdates?";
   std::vector<anilibria::Title> titles;
-  std::string response_body;
 
   std::unordered_map<std::string, std::string> params;
   params["filter"] = request.filter;
@@ -184,16 +228,21 @@ std::vector<anilibria::Title> get_updates(anilibria::AdditionalFields request) {
     if (!res) {
       if (!jsonarray.contains("error")) {
         for (auto it : jsonarray) titles.push_back(anilibria::Title(it, this));
+        this->set_error_info();
+      } else {
+        this->set_error_info(anilibria::Error(jsonarray));
       }
+    } else {
+      this->set_error_info(res, "CURL_ERROR");
     }
+    curl_easy_cleanup(curl_handle);
     return titles;
   }
 }
 
-std::vector<anilibria::Title> get_changes(anilibria::AdditionalFields request) {
+std::vector<anilibria::Title> anilibria::AnilibriaAPI::get_changes(anilibria::AdditionalFields request) {
   std::string url = base_url + "/" + version + "/" + "getChanges?";
   std::vector<anilibria::Title> titles;
-  std::string response_body;
 
   std::unordered_map<std::string, std::string> params;
   params["filter"] = request.filter;
@@ -220,16 +269,21 @@ std::vector<anilibria::Title> get_changes(anilibria::AdditionalFields request) {
     if (!res) {
       if (!jsonarray.contains("error")) {
         for (auto it : jsonarray) titles.push_back(anilibria::Title(it, this));
+        this->set_error_info();
+      } else {
+        this->set_error_info(anilibria::Error(jsonarray));
       }
+    } else {
+      this->set_error_info(res, "CURL_ERROR");
     }
+    curl_easy_cleanup(curl_handle);
     return titles;
   }
 }
 
-std::vector<anilibria::Schedule> get_schedule(anilibria::ScheduleRequest request) {
+std::vector<anilibria::Schedule> anilibria::AnilibriaAPI::get_schedule(anilibria::ScheduleRequest request) {
   std::string url = base_url + "/" + version + "/" + "getSchedule?";
   std::vector<anilibria::Schedule> schedule;
-  std::string response_body;
 
   std::unordered_map<std::string, std::string> params;
   params["filter"] = request.filter;
@@ -254,16 +308,21 @@ std::vector<anilibria::Schedule> get_schedule(anilibria::ScheduleRequest request
 
     if (!res) {
       if (!jsonarray.contains("error")) {
-        for (auto it : jsonarray) titles.push_back(anilibria::Schedule(it, this));
+        for (auto it : jsonarray) schedule.push_back(anilibria::Schedule(it, this));
+        this->set_error_info();
+      } else {
+        this->set_error_info(anilibria::Error(jsonarray));
       }
+    } else {
+      this->set_error_info(res, "CURL_ERROR");
     }
+    curl_easy_cleanup(curl_handle);
     return schedule;
   }
 }
 
-std::vector<std::string> get_caching_nodes() {
+std::vector<std::string> anilibria::AnilibriaAPI::get_caching_nodes() {
   std::string url = base_url + "/" + version + "/" + "getCachingNodes";
-  std::string response_body;
 
   CURL* curl_handle = curl_easy_init();
   CURLCode res;
@@ -279,15 +338,22 @@ std::vector<std::string> get_caching_nodes() {
 
     if (!res) {
       if (!jsonarray.contains("error")) {
-        return jsonarray;
+        this->set_error_info();
+        curl_easy_cleanup(curl_handle);
+        return jsonarray.get<std::vector<std::string>>();
+      } else {
+        this->set_error_info(anilibria::Error(jsonarray));
       }
+    } else {
+      this->set_error_info(res, "CURL_ERROR");
     }
-
+    curl_easy_cleanup(curl_handle);
+    return std::vector<std::string> ();
+  }
 }
 
-std::vector<int> get_years() {
+std::vector<int> anilibria::AnilibriaAPI::get_years() {
   std::string url = base_url + "/" + version + "/" + "getYears";
-  std::string response_body;
 
   CURL* curl_handle = curl_easy_init();
   CURLCode res;
@@ -303,15 +369,22 @@ std::vector<int> get_years() {
 
     if (!res) {
       if (!jsonarray.contains("error")) {
-        return jsonarray;
+        this->set_error_info();
+        curl_easy_cleanup(curl_handle);
+        return jsonarray.get<std::vector<int>>();
+      } else {
+        this->set_error_info(anilibria::Error(jsonarray));
       }
+    } else {
+      this->set_error_info(res, "CURL_ERROR");
     }
-
+    curl_easy_cleanup(curl_handle);
+    return std::vector<int> ();
+  }
 }
 
-std::vector<std::string> get_genres(int sorting_type) {
+std::vector<std::string> anilibria::AnilibriaAPI::get_genres(int sorting_type) {
   std::string url = base_url + "/" + version + "/" + "getGenres?";
-  std::string response_body;
 
   std::unordered_map<std::string, std::string> params;
   params["sorting_type"] = sorting_type;
@@ -331,9 +404,525 @@ std::vector<std::string> get_genres(int sorting_type) {
 
     if (!res) {
       if (!jsonarray.contains("error")) {
-        return jsonarray;
+        this->set_error_info();
+        curl_easy_cleanup(curl_handle);
+        return jsonarray.get<std::vector<std::string>>();
+      } else {
+        this->set_error_info(anilibria::Error(jsonarray));
       }
+    } else {
+      this->set_error_info(res, "CURL_ERROR");
     }
+    curl_easy_cleanup(curl_handle);
+    return std::vector<std::string> ();
   }
 
 }
+
+std::vector<anilibria::Title> anilibria::AnilibriaAPI::search_titles(anilibria::SearchTitlesRequest request) {
+  std::string url = base_url + "/" + version + "/" + "searchTitles?";
+  std::vector<anilibria::Title> titles;
+
+  std::unordered_map<std::string, std::string> params;
+  params["search"] = request.search;
+  params["year"] = request.year;
+  params["season_code"] = request.season_code;
+  params["genres"] = request.genres;
+  params["voice"] = request.voice;
+  params["translator"] = request.translator;
+  params["editing"] = request.editing;
+  params["decor"] = request.decor;
+  params["timing"] = request.timing;
+
+  params["filter"] = request.filter;
+  params["remove"] = request.remove;
+  params["include"] = request.include;
+  params["description_type"] = request.description_type;
+  params["playlist_type"] = request.playlist_type;
+  params["limit"] = request.limit;
+  params["after"] = request.after;
+
+  url += url_builder(params);
+  CURL* curl_handle = curl_easy_init();
+  CURLCode res;
+  if (curl_handle) {
+    std::string response_body;
+    curl_easy_setopt(curl_handle, CURLOPT_URL, url);
+    curl_easy_setopt(curl_handle, CURLOPT_WRITEFUNCTION, write_callback);
+    curl_easy_setopt(curl_handle, CURLOPT_WRITEDATA, &response_body);
+
+    res = curl_easy_perform();
+
+    nlohmann::json jsonarray = nlohmann::json::parse(response_body);
+
+    if (!res) {
+        if (!jsonarray.contains("error")) {
+          for (auto it : jsonarray) titles.push_back(anilibria::Title(it, this));
+          this->set_error_info();
+        } else {
+          this->set_error_info(anilibria::Error(jsonarray));
+        }
+      } else {
+        this->set_error_info(res, "CURL_ERROR");
+      }
+      curl_easy_cleanup(curl_handle);
+      return titles;
+  }
+}
+
+std::vector<anilibria::Title> anilibria::AnilibriaAPI::advanced_search(anilibria::AdvancedSearchRequest request) {
+  std::string url = base_url + "/" + version + "/" + "advancedSearch?";
+  std::vector<anilibria::Title> titles;
+
+  std::unordered_map<std::string, std::string> params;
+  params["query"] = request.query;
+
+  params["filter"] = request.filter;
+  params["remove"] = request.remove;
+  params["include"] = request.include;
+  params["description_type"] = request.description_type;
+  params["playlist_type"] = request.playlist_type;
+  params["limit"] = request.limit;
+  params["after"] = request.after;
+
+  params["order_by"] = request.order_by;
+  params["sort_direction"] = request.sort_direction;
+
+  url += url_builder(params);
+  CURL* curl_handle = curl_easy_init();
+  CURLCode res;
+  if (curl_handle) {
+    std::string response_body;
+    curl_easy_setopt(curl_handle, CURLOPT_URL, url);
+    curl_easy_setopt(curl_handle, CURLOPT_WRITEFUNCTION, write_callback);
+    curl_easy_setopt(curl_handle, CURLOPT_WRITEDATA, &response_body);
+
+    res = curl_easy_perform();
+
+    nlohmann::json jsonarray = nlohmann::json::parse(response_body);
+
+    if (!res) {
+        if (!jsonarray.contains("error")) {
+          for (auto it : jsonarray) titles.push_back(anilibria::Title(it, this));
+          this->set_error_info();
+        } else {
+          this->set_error_info(anilibria::Error(jsonarray));
+        }
+      } else {
+        this->set_error_info(res, "CURL_ERROR");
+      }
+      curl_easy_cleanup(curl_handle);
+      return titles;
+  }
+}
+
+std::vector<anilibria::TorrentUserStat> anilibria::AnilibriaAPI::get_seed_stats(anilibria::SeedStatsRequest request) {
+  std::string url = base_url + "/" + version + "/" + "getSeedStats?";
+  std::vector<anilibria::TorrentUserStat> users;
+
+  std::unordered_map<std::string, std::string> params;
+  params["users"] = request.users;
+
+  params["filter"] = request.filter;
+  params["remove"] = request.remove;
+  params["include"] = request.include;
+  params["description_type"] = request.description_type;
+  params["playlist_type"] = request.playlist_type;
+  params["limit"] = request.limit;
+  params["after"] = request.after;
+
+  params["sort_by"] = request.sort_by;
+  params["order"] = request.order;
+
+  url += url_builder(params);
+  CURL* curl_handle = curl_easy_init();
+  CURLCode res;
+  if (curl_handle) {
+    std::string response_body;
+    curl_easy_setopt(curl_handle, CURLOPT_URL, url);
+    curl_easy_setopt(curl_handle, CURLOPT_WRITEFUNCTION, write_callback);
+    curl_easy_setopt(curl_handle, CURLOPT_WRITEDATA, &response_body);
+
+    res = curl_easy_perform();
+
+    nlohmann::json jsonarray = nlohmann::json::parse(response_body);
+
+    if (!res) {
+        if (!jsonarray.contains("error")) {
+          for (auto it : jsonarray) users.push_back(anilibria::TorrentUserStat(it));
+          this->set_error_info();
+        } else {
+          this->set_error_info(anilibria::Error(jsonarray));
+        }
+      } else {
+        this->set_error_info(res, "CURL_ERROR");
+      }
+      curl_easy_cleanup(curl_handle);
+      return users;
+  }
+}
+
+std::vector<anilibria::Title> anilibria::AnilibriaAPI::get_favorites(anilibria::AdditionalFields request) {
+  std::string url = base_url + "/" + version + "/" + "getFavorites?";
+  std::vector<anilibria::Titles> titles;
+
+  std::unordered_map<std::string, std::string> params;
+  params["session"] = session;
+
+  params["filter"] = request.filter;
+  params["remove"] = request.remove;
+  params["include"] = request.include;
+  params["description_type"] = request.description_type;
+  params["playlist_type"] = request.playlist_type;
+
+  url += url_builder(params);
+  CURL* curl_handle = curl_easy_init();
+  CURLCode res;
+  if (curl_handle) {
+    std::string response_body;
+    curl_easy_setopt(curl_handle, CURLOPT_URL, url);
+    curl_easy_setopt(curl_handle, CURLOPT_WRITEFUNCTION, write_callback);
+    curl_easy_setopt(curl_handle, CURLOPT_WRITEDATA, &response_body);
+
+    res = curl_easy_perform();
+
+    nlohmann::json jsonarray = nlohmann::json::parse(response_body);
+
+    if (!res) {
+        if (!jsonarray.contains("error")) {
+          for (auto it : jsonarray) titles.push_back(anilibria::Title(it, this));
+          this->set_error_info();
+        } else {
+          this->set_error_info(anilibria::Error(jsonarray));
+        }
+      } else {
+        this->set_error_info(res, "CURL_ERROR");
+      }
+      curl_easy_cleanup(curl_handle);
+      return titles;
+  }
+}
+
+std::vector<anilibria::Youtube> anilibria::AnilibriaAPI::get_youtube(anilibria::AdditionalFields request) {
+  std::string url = base_url + "/" + version + "/" + "getYoutube?";
+  std::vector<anilibria::Youtube> youtube;
+
+  std::unordered_map<std::string, std::string> params;
+  params["filter"] = request.filter;
+  params["remove"] = request.remove;
+  params["limit"] = request.limit;
+  params["since"] = request.since;
+  params["after"] = request.after;
+
+  url += url_builder(params);
+  CURL* curl_handle = curl_easy_init();
+  CURLCode res;
+  if (curl_handle) {
+    std::string response_body;
+    curl_easy_setopt(curl_handle, CURLOPT_URL, url);
+    curl_easy_setopt(curl_handle, CURLOPT_WRITEFUNCTION, write_callback);
+    curl_easy_setopt(curl_handle, CURLOPT_WRITEDATA, &response_body);
+
+    res = curl_easy_perform();
+
+    nlohmann::json jsonarray = nlohmann::json::parse(response_body);
+
+    if (!res) {
+        if (!jsonarray.contains("error")) {
+          for (auto it : jsonarray) youtube.push_back(anilibria::Youtube(it));
+          this->set_error_info();
+        } else {
+          this->set_error_info(anilibria::Error(jsonarray));
+        }
+      } else {
+        this->set_error_info(res, "CURL_ERROR");
+      }
+      curl_easy_cleanup(curl_handle);
+      return youtube;
+  }
+}
+
+std::vector<anilibria::Feed> anilibria::AnilibriaAPI::get_feed(anilibria::AdditionalFields request) {
+  std::string url = base_url + "/" + version + "/" + "getFeed?";
+  std::vector<anilibria::Feed> feed;
+
+  std::unordered_map<std::string, std::string> params;
+  params["filter"] = request.filter;
+  params["remove"] = request.remove;
+  params["include"] = request.include;
+  params["limit"] = request.limit;
+  params["since"] = request.since;
+  params["after"] = request.after;
+  params["description_type"] = request.description_type;
+  params["playlist_type"] = request.playlist_type;
+
+  url += url_builder(params);
+  CURL* curl_handle = curl_easy_init();
+  CURLCode res;
+  if (curl_handle) {
+    std::string response_body;
+    curl_easy_setopt(curl_handle, CURLOPT_URL, url);
+    curl_easy_setopt(curl_handle, CURLOPT_WRITEFUNCTION, write_callback);
+    curl_easy_setopt(curl_handle, CURLOPT_WRITEDATA, &response_body);
+
+    res = curl_easy_perform();
+
+    nlohmann::json jsonarray = nlohmann::json::parse(response_body);
+
+    if (!res) {
+        if (!jsonarray.contains("error")) {
+          for (auto it : jsonarray) feed.push_back(anilibria::Feed(it, this));
+          this->set_error_info();
+        } else {
+          this->set_error_info(anilibria::Error(jsonarray));
+        }
+      } else {
+        this->set_error_info(res, "CURL_ERROR");
+      }
+      curl_easy_cleanup(curl_handle);
+      return feed;
+  }
+}
+
+anilibria::Title anilibria::AnilibriaAPI::get_title(anilibria::TitleRequest request) {
+  std::string url = base_url + "/" + version + "/" + "getTitle?";
+
+  std::unordered_map<std::string, std::string> params;
+  params["id"] = request.id;
+  params["code"] = request.code;
+  params["torrent_id"] = request.torrent_id;
+
+  params["filter"] = request.filter;
+  params["remove"] = request.remove;
+  params["include"] = request.include;
+  params["description_type"] = request.description_type;
+  params["playlist_type"] = request.playlist_type;
+
+  url += url_builder(params);
+  CURL* curl_handle = curl_easy_init();
+  CURLCode res;
+  if (curl_handle && request.id != -1 && request.code != "") {
+    std::string response_body;
+    curl_easy_setopt(curl_handle, CURLOPT_URL, url);
+    curl_easy_setopt(curl_handle, CURLOPT_WRITEFUNCTION, write_callback);
+    curl_easy_setopt(curl_handle, CURLOPT_WRITEDATA, &response_body);
+
+    res = curl_easy_perform();
+
+    nlohmann::json jsonarray = nlohmann::json::parse(response_body);
+
+    if (!res) {
+      if (!jsonarray.contains("error")) {
+        this->set_error_info();
+        curl_easy_cleanup(curl_handle);
+        return anilibria::Title(jsonarray);
+      } else {
+        this->set_error_info(anilibria::Error(jsonarray));
+      }
+    } else {
+      this->set_error_info(res, "CURL_ERROR");
+    }
+  }
+    curl_easy_cleanup(curl_handle);
+    return anilibria::Title();
+}
+
+anilibria::Title anilibria::AnilibriaAPI::get_random_title(anilibria::AdditionalFields request) {
+  std::string url = base_url + "/" + version + "/" + "getRandomTitle?";
+
+  std::unordered_map<std::string, std::string> params;
+  params["filter"] = request.filter;
+  params["remove"] = request.remove;
+  params["include"] = request.include;
+  params["description_type"] = request.description_type;
+  params["playlist_type"] = request.playlist_type;
+
+  url += url_builder(params);
+  CURL* curl_handle = curl_easy_init();
+  CURLCode res;
+  if (curl_handle) {
+    std::string response_body;
+    curl_easy_setopt(curl_handle, CURLOPT_URL, url);
+    curl_easy_setopt(curl_handle, CURLOPT_WRITEFUNCTION, write_callback);
+    curl_easy_setopt(curl_handle, CURLOPT_WRITEDATA, &response_body);
+
+    res = curl_easy_perform();
+
+    nlohmann::json jsonarray = nlohmann::json::parse(response_body);
+
+    if (!res) {
+      if (!jsonarray.contains("error")) {
+        this->set_error_info();
+        curl_easy_cleanup(curl_handle);
+        return anilibria::Title(jsonarray);
+      } else {
+        this->set_error_info(anilibria::Error(jsonarray));
+      }
+    } else {
+      this->set_error_info(res, "CURL_ERROR");
+    }
+  }
+    curl_easy_cleanup(curl_handle);
+    return anilibria::Title();
+}
+
+anilibria::Team anilibria::AnilibriaAPI::get_team() {
+  std::string url = base_url + "/" + version + "/" + "getTeam?";
+
+  CURL* curl_handle = curl_easy_init();
+  CURLCode res;
+  if (curl_handle) {
+    std::string response_body;
+    curl_easy_setopt(curl_handle, CURLOPT_URL, url);
+    curl_easy_setopt(curl_handle, CURLOPT_WRITEFUNCTION, write_callback);
+    curl_easy_setopt(curl_handle, CURLOPT_WRITEDATA, &response_body);
+
+    res = curl_easy_perform();
+
+    nlohmann::json jsonarray = nlohmann::json::parse(response_body);
+
+    if (!res) {
+      if (!jsonarray.contains("error")) {
+        this->set_error_info();
+        curl_easy_cleanup(curl_handle);
+        return anilibria::Team(jsonarray);
+      } else {
+        this->set_error_info(anilibria::Error(jsonarray));
+      }
+    } else {
+        this->set_error_info(res, "CURL_ERROR");
+    }
+  }
+    curl_easy_cleanup(curl_handle);
+    return anilibria::Team();
+  }
+}
+
+std::string anilibria::AnilibriaAPI::get_RSS(anilibria::RSSRequest request) {
+  std::string url = base_url + "/" + version + "/" + "getRSS?";
+
+  std::unordered_map<std::string, std::string> params;
+  params["rss_type"] = request.rss_type;
+  params["session"] = session;
+
+  params["limit"] = request.limit;
+  params["since"] = request.since;
+  params["after"] = request.after;
+
+  url += url_builder(params);
+  CURL* curl_handle = curl_easy_init();
+  CURLCode res;
+  if (curl_handle) {
+    std::string response_body;
+    curl_easy_setopt(curl_handle, CURLOPT_URL, url);
+    curl_easy_setopt(curl_handle, CURLOPT_WRITEFUNCTION, write_callback);
+    curl_easy_setopt(curl_handle, CURLOPT_WRITEDATA, &response_body);
+
+    res = curl_easy_perform();
+    try {
+      nlohmann::json jsonarray = nlohmann::json::parse(response_body);
+    } catch(nlohmann::json::parse_error& e) {
+      nlohmann::json jsonarray = nlohmann::json();
+    }
+
+    if (!res) {
+      if (!jsonarray.contains("error")) {
+        this->set_error_info();
+        curl_easy_cleanup(curl_handle);
+        return response_body;
+      } else {
+        this->set_error_info(anilibria::Error(jsonarray));
+      }
+    } else {
+      this->set_error_info(res, "CURL_ERROR");
+    }
+  }
+    curl_easy_cleanup(curl_handle);
+    return "";
+  }
+}
+
+bool add_favorites(int title_id) {
+  if (session == "") {
+    this->set_error_info(-3, "Session not specified, please do authorization first");
+    return false;
+  } else {
+    std::string url = base_url + "/" + version + "/" + "addFavorite?";
+
+    std::unordered_map<std::string, std::string> params;
+    params["session"] = session;
+    params["title_id"] = title_id;
+
+    url += url_builder(params);
+    CURL* curl_handle = curl_easy_init();
+    CURLCode res;
+    if (curl_handle) {
+      std::string response_body;
+      curl_easy_setopt(curl_handle, CURLOPT_URL, url);
+      curl_easy_setopt(curl_handle, CURLOPT_PUT, 1);
+      curl_easy_setopt(curl_handle, CURLOPT_WRITEFUNCTION, write_callback);
+      curl_easy_setopt(curl_handle, CURLOPT_WRITEDATA, &response_body);
+
+      res = curl_easy_perform();
+
+      nlohmann::json jsonarray = nlohmann::json::parse(response_body);
+
+      if (!res) {
+        if (!jsonarray.contains("error")) {
+          this->set_error_info();
+          curl_easy_cleanup(curl_handle);
+          return true;
+        } else {
+          this->set_error_info(anilibria::Error(jsonarray));
+        }
+      } else {
+        this->set_error_info(res, "CURL_ERROR");
+      }
+    }
+      curl_easy_cleanup(curl_handle);
+      return false;
+
+    }
+  }
+
+bool add_favorites(int title_id) {
+  if (session == "") {
+    this->set_error_info(-3, "Session not specified, please do authorization first");
+    return false;
+  } else {
+    std::string url = base_url + "/" + version + "/" + "delFavorite?";
+
+    std::unordered_map<std::string, std::string> params;
+    params["session"] = session;
+    params["title_id"] = title_id;
+
+    url += url_builder(params);
+    CURL* curl_handle = curl_easy_init();
+    CURLCode res;
+    if (curl_handle) {
+      std::string response_body;
+      curl_easy_setopt(curl_handle, CURLOPT_URL, url);
+      curl_easy_setopt(curl_handle, CURLOPT_DELETE, 1);
+      curl_easy_setopt(curl_handle, CURLOPT_WRITEFUNCTION, write_callback);
+      curl_easy_setopt(curl_handle, CURLOPT_WRITEDATA, &response_body);
+
+      res = curl_easy_perform();
+
+      nlohmann::json jsonarray = nlohmann::json::parse(response_body);
+
+      if (!res) {
+        if (!jsonarray.contains("error")) {
+          this->set_error_info();
+          curl_easy_cleanup(curl_handle);
+          return true;
+        } else {
+          this->set_error_info(anilibria::Error(jsonarray));
+        }
+      } else {
+        this->set_error_info(res, "CURL_ERROR");
+      }
+    }
+      curl_easy_cleanup(curl_handle);
+      return false;
+    }
+  }

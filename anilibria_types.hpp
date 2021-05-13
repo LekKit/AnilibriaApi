@@ -1,11 +1,13 @@
 
+#pragma once
 #include <string>
 #include <vector>
-#include "anilibria_api.h"
+#include "anilibria_api.hpp"
 #include <nlohmann/json.hpp>
 
 
 namespace anilibria {
+    class AnilibriaAPI;
 
     struct AdditionalFields {
 
@@ -20,7 +22,7 @@ namespace anilibria {
 
 
 
-    }
+    };
 
     struct TitleRequest : public AdditionalFields {
 
@@ -38,6 +40,7 @@ namespace anilibria {
             id = -1;
             torrent_id = -1;
         };
+      };
 
     struct ScheduleRequest : public AdditionalFields {
 
@@ -78,12 +81,12 @@ namespace anilibria {
     struct RSSRequest : public AdditionalFields {
 
         std::string rss_type;
-        std::string session;
     };
 
 
 
-    struct Names {
+    class Names {
+    public:
         std::string ru;
         std::string en;
         std::string alternative;
@@ -93,10 +96,12 @@ namespace anilibria {
           if (obj.contains("en")) en = obj["en"];
           if (obj.contains("alternative")) alternative = obj["alternative"];
         }
+        Names() {};
 
     };
 
-    struct Poster {
+    class Poster {
+    public:
         std::string url;
         std::string raw_base64_file;
         int updated_timestamp;
@@ -106,10 +111,12 @@ namespace anilibria {
           if (obj.contains("raw_base64_file")) raw_base64_file = obj["raw_base64_file"];
           if (obj.contains("updated_timestamp")) updated_timestamp = obj["updated_timestamp"];
         }
+        Poster() {};
 
     };
 
-    struct Series {
+    class Series {
+    public:
         std::string string;
         int first;
         int last;
@@ -118,9 +125,11 @@ namespace anilibria {
           if (obj.contains("first")) first = obj["first"];
           if (obj.contains("last")) last = obj["last"];
         }
+        Series() {};
     };
-string
-    struct Status {
+
+    class Status {
+    public:
         std::string string;
         int code;
 
@@ -128,10 +137,12 @@ string
           if (obj.contains("string")) string = obj["string"];
           if (obj.contains("code")) code = obj["code"];
         }
+        Status() {};
 
     };
 
-    struct Type {
+    class Type {
+    public:
         std::string full_string;
         std::string string;
         std::string length;
@@ -145,10 +156,12 @@ string
           if (obj.contains("series")) series = obj["series"];
           if (obj.contains("code")) code = obj["code"];
         }
+        Type() {};
 
     };
 
-    struct Team {
+    class Team {
+    public:
         std::vector<std::string> voice;
         std::vector<std::string> translator;
         std::vector<std::string> editing;
@@ -156,16 +169,18 @@ string
         std::vector<std::string> timing;
 
         Team(nlohmann::json obj) {
-          if (obj.contains("voice")) voice = obj["voice"];
-          if (obj.contains("translator")) translator = obj["translator"];
-          if (obj.contains("editing")) editing = obj["editing"];
-          if (obj.contains("decor")) decor = obj["decor"];
-          if (obj.contains("timing")) timing = obj["timing"];
+          if (obj.contains("voice")) voice = obj["voice"].get<std::vector<std::string>>();
+          if (obj.contains("translator")) translator = obj["translator"].get<std::vector<std::string>>();
+          if (obj.contains("editing")) editing = obj["editing"].get<std::vector<std::string>>();
+          if (obj.contains("decor")) decor = obj["decor"].get<std::vector<std::string>>();
+          if (obj.contains("timing")) timing = obj["timing"].get<std::vector<std::string>>();
         }
+        Team() {};
 
     };
 
-    struct Season {
+    class Season {
+    public:
         int year;
         int week_day;
 
@@ -173,10 +188,12 @@ string
           if (obj.contains("year")) year = obj["year"];
           if (obj.contains("week_day")) week_day = obj["week_day"];
         }
+        Season() {};
 
     };
 
-    struct Blocked {
+    class Blocked {
+    public:
         bool blocked;
         bool bakanim;
 
@@ -184,10 +201,12 @@ string
           if (obj.contains("blocked")) blocked = obj["blocked"];
           if (obj.contains("bakanim")) bakanim = obj["bakanim"];
         }
+        Blocked() {};
 
     };
 
-    struct Hsl {
+    class Hsl {
+    public:
         std::string fhd;
         std::string hd;
         std::string sd;
@@ -196,11 +215,13 @@ string
           if (obj.contains("fhd")) fhd = obj["fhd"];
           if (obj.contains("hd")) hd = obj["hd"];
           if (obj.contains("sd")) sd = obj["sd"];
-        }
+        };
+        Hsl() {};
 
     };
 
-    struct Playlist {
+    class Playlist {
+    public:
         Hsl hsl;
         int serie;
         int created_timestamp;
@@ -210,10 +231,12 @@ string
           if (obj.contains("serie")) serie = obj["serie"];
           if (obj.contains("created_timestamp")) created_timestamp = obj["created_timestamp"];
         }
+        Playlist() {};
 
     };
 
-    struct Player {
+    class Player {
+    public:
        std::string alternative_player;
        std::string host;
        Playlist playlist;
@@ -223,11 +246,13 @@ string
          if (obj.contains("host")) host = obj["host"];
          if (obj.contains("playlist")) playlist = obj["playlist"];
        }
+       Player() {};
 
 
     };
 
-    struct TorrentQuality {
+    class TorrentQuality {
+    public:
         std::string string;
         std::string type;
         std::string encoder;
@@ -241,10 +266,12 @@ string
           if (obj.contains("resolution")) resolution = obj["resolution"];
           if (obj.contains("lq_audio")) lq_audio = obj["lq_audio"];
         }
+        TorrentQuality() {};
 
     };
 
-    struct TorrentFilesList {
+    class TorrentFilesList {
+    public:
         std::string file;
         int size;
         int offset;
@@ -254,10 +281,12 @@ string
           if (obj.contains("size")) size = obj["size"];
           if (obj.contains("offset")) offset = obj["offset"];
         }
+        TorrentFilesList() {};
 
     };
 
-    struct TorrentMetadata {
+    class TorrentMetadata {
+    public:
         std::string hash;
         std::string name;
         std::vector<std::string> announce;
@@ -267,14 +296,18 @@ string
         TorrentMetadata(nlohmann::json obj) {
           if (obj.contains("hash")) hash = obj["hash"];
           if (obj.contains("name")) name = obj["name"];
-          if (obj.contains("announce")) announce = obj["announce"];
-          if (obj.contains("files_list")) files_list = obj["files_list"];
+          if (obj.contains("announce"))  announce = obj["announce"].get<std::vector<std::string>>();
+          if (obj.contains("files_list")) {
+            for (auto it: obj["files_list"]) files_list.push_back(TorrentFilesList(it));
+          }
           if (obj.contains("created_timestamp")) created_timestamp = obj["created_timestamp"];
         }
+        TorrentMetadata() {};
 
     };
 
-    struct TorrentList {
+    class TorrentList {
+    public:
         std::string url;
         std::string raw_base64_file;
         TorrentQuality quality;
@@ -300,25 +333,28 @@ string
           if (obj.contains("metadata")) metadata = obj["metadata"];
           if (obj.contains("uploaded_timestamp")) uploaded_timestamp = obj["uploaded_timestamp"];
         }
+        TorrentList() {};
 
 
     };
 
 
-    struct Error {
+    class Error {
+    public:
         std::string message;
         int code;
 
         Error(nlohmann::json obj) {
-          if (obj.contains("message")) message = obj["message"];
-          if (obj.contains("code")) code = obj["code"];
+          if (obj["error"].contains("message")) message = obj["error"]["message"];
+          if (obj["error"].contains("code")) code = obj["error"]["code"];
         }
+        Error() {};
 
     };
 
 
 
-    struct Title {
+    class Title {
     private:
         AnilibriaAPI* anilibria_api;
 
@@ -343,7 +379,7 @@ string
         int week_day;
 
         Title(nlohmann::json obj, AnilibriaAPI* api) {
-          if (obj.contains("genres")) genres = obj["genres"];
+          if (obj.contains("genres")) genres = obj["genres"].get<std::vector<std::string>>();
           if (obj.contains("code")) code = obj["code"];
           if (obj.contains("description")) description = obj["description"];
           if (obj.contains("names")) names = obj["names"];
@@ -364,6 +400,7 @@ string
 
           anilibria_api = api;
         }
+        Title() {};
 
         bool add_to_favorites() {
           in_favorites++;
@@ -374,10 +411,30 @@ string
           in_favorites--;
           return anilibria_api->del_favorite(id);
         };
+        Title(nlohmann::json obj) {
+          if (obj.contains("genres")) genres = obj["genres"].get<std::vector<std::string>>();
+          if (obj.contains("code")) code = obj["code"];
+          if (obj.contains("description")) description = obj["description"];
+          if (obj.contains("names")) names = obj["names"];
+          if (obj.contains("poster")) poster = obj["poster"];
+          if (obj.contains("status")) status = obj["status"];
+          if (obj.contains("type")) type = obj["type"];
+          if (obj.contains("team")) team = obj["team"];
+          if (obj.contains("season")) season = obj["season"];
+          if (obj.contains("blocked")) blocked = obj["blocked"];
+          if (obj.contains("player")) player = obj["player"];
+          if (obj.contains("torrents")) torrents = obj["torrents"];
+          if (obj.contains("id")) id = obj["id"];
+          if (obj.contains("updated")) updated = obj["updated"];
+          if (obj.contains("last_change")) last_change = obj["last_change"];
+          if (obj.contains("year")) year = obj["year"];
+          if (obj.contains("week_day")) week_day = obj["week_day"];
+          if (obj.contains("in_favorites")) in_favorites = obj["in_favorites"];
+        }
 
     };
 
-    struct Schedule {
+    class Schedule {
     private:
       AnilibriaAPI *api;
     public:
@@ -385,16 +442,18 @@ string
         int day;
 
         Schedule(nlohmann::json obj, AnilibriaAPI *api) {
-          if (obj.contains("list")) list = obj["list"];
+          if (obj.contains("list")) {
+            for (auto it : obj["list"]) list.push_back(Title(it, api));
+          }
           if (obj.contains("day")) day = obj["day"];
-
-          for (auto it : list) it.api = api;
         }
+        Schedule() {};
 
 
     };
 
-    struct TorrentUserStat {
+    class TorrentUserStat {
+    public:
         std::string user;
         int downloaded;
         int uploaded;
@@ -404,10 +463,12 @@ string
           if (obj.contains("downloaded")) downloaded = obj["downloaded"];
           if (obj.contains("uploaded")) uploaded = obj["uploaded"];
         }
+        TorrentUserStat() {};
 
     };
 
-    struct Youtube {
+    class Youtube {
+    public:
         std::string title;
         std::string image;
         std::string youtube_id;
@@ -419,17 +480,20 @@ string
           if (obj.contains("youtube_id")) youtube_id = obj["youtube_id"];
           if (obj.contains("timestamp")) timestamp = obj["timestamp"];
         }
+        Youtube() {};
 
     };
 
-    struct Feed {
+    class Feed {
+    public:
         Title title;
         Youtube youtube;
 
-        Feed(nlohmann::json obj) {
-          if (obj.contains("title")) title = obj["title"];
+        Feed(nlohmann::json obj, AnilibriaAPI* api) {
+          if (obj.contains("title")) title = Title(obj["title"], api);
           if (obj.contains("youtube")) youtube = obj["youtube"];
         }
+        Feed() {};
 
     };
 
