@@ -22,7 +22,7 @@ namespace anilibria {
         std::string session;
 
         void set_error_info();
-        void set_error_info(nlohmann::json jsonarray);
+        void set_error_info(anilibria::Error error);
         void set_error_info(int error_code, std::string error_msg);
 
 
@@ -54,6 +54,7 @@ namespace anilibria {
         std::string auth(std::string mail, std::string passwd);
         bool logout();
 
+        AnilibriaAPI() {};
         AnilibriaAPI(std::string base_url, std::string auth_url);
         AnilibriaAPI(std::string urls[2]);
         AnilibriaAPI(std::string session);
