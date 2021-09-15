@@ -4,6 +4,7 @@
 #include <string>
 #include <map>
 #include <utility>
+#include <iostream>
 #include <vector>
 #include <cinttypes>
 #include <curl/curl.h>
@@ -111,6 +112,11 @@ namespace AniAPI {
                                                              timings(std::move(_timings)), decors(std::move(_decors)),
                                                              editors(std::move(_editors))
                         {}
+        static TranslationTeam from_json(JSONProvider &json) {
+            return TranslationTeam(json["team"].get<strings_list_t>("voice", strings_list_t{}), json["team"].get<strings_list_t>("translator", strings_list_t{}),
+                                   json["team"].get<strings_list_t>("timing", strings_list_t{}), json["team"].get<strings_list_t>("decor", strings_list_t{}),
+                                   json["team"].get<strings_list_t>("editing", strings_list_t{}));
+        }
     };
 
     class TitleSeason {
@@ -316,19 +322,66 @@ namespace AniAPI {
 
     };
 
+    class Schedule{
+    public:
+        std::vector<Title> list;
+
+        uint8_t day;
+
+        Schedule() = default;
+
+        Schedule(uint8_t _day, std::vector<Title> _list) : day(_day), list(std::move(_list))
+        {}
+
+        static Schedule from_json(JSONProvider &json) {
+            std::vector<Title> _list;
+
+
+            for (auto &x : json["list"].json) {
+                JSONProvider js(x);
+                // std::cout << x.dump() << '\n';
+                _list.push_back(Title::from_json(js));
+            }
+
+            Schedule schedule(json.get<uint8_t>("day", 0), _list);
+            return schedule;
+        }
+
+    };
+
 
 
     class Anilibria {
     public:
+        JSONProvider libria_method(const std::string &api_ver, const std::string &method);
         JSONProvider libria_method(const std::string &api_ver, const std::string &method,
                                      const std::map<std::string, std::string> &query);
-        Title get_title(uint32_t id, const strings_list_t &filter,
-                        const strings_list_t &remove);
-        std::vector<Title> get_titles(const std::string &id_list, const strings_list_t &filter,
-                                      const strings_list_t &remove);
-        std::vector<Title> get_changes(uint32_t limit, uint32_t since,
-                                       uint32_t after, const strings_list_t &filter,
-                                       const strings_list_t &remove);
+
+        Title get_title(uint32_t id, const strings_list_t &filter = {},
+                        const strings_list_t &remove = {});
+        std::vector<Title> get_titles(const std::string &id_list, const strings_list_t &filter = {},
+                                      const strings_list_t &remove = {});
+        std::vector<Title> get_changes(uint32_t limit = 5, uint32_t since = 0,
+                                       uint32_t after = 0, const strings_list_t &filter = {},
+                                       const strings_list_t &remove = {});
+        std::vector<Schedule> get_schedule(const std::string &days, const strings_list_t &filter = {},
+                                           const strings_list_t &remove = {});
+        strings_list_t get_caching_nodes();
+        Title get_random_title(const strings_list_t &filter = {}, const strings_list_t &remove = {});
+        std::vector<uint32_t> get_years();
+        strings_list_t get_genres(uint8_t sorting_type = 0);
+        std::vector<Title> search_titles(const std::string &search = "", uint32_t limit = 5,
+                                         uint32_t after = 0, const strings_list_t &year = {},
+                                         const strings_list_t &season_code = {}, const strings_list_t &genres = {},
+                                         const strings_list_t &voice = {}, const strings_list_t &translator = {},
+                                         const strings_list_t &editing = {}, const strings_list_t &decor = {},
+                                         const strings_list_t &timing = {}, const strings_list_t &filter = {},
+                                         const strings_list_t &remove = {});
+        std::vector<Title> advanced_search(const std::string &query, uint32_t limit = 5,
+                                           uint32_t after = 0, const std::string &order_by = "",
+                                           uint8_t sort_direction = 0, const strings_list_t &filter = {},
+                                           const strings_list_t &remove = {});
+        TranslationTeam get_team();
 
     private:
         std::string host_url = "wwnd.space";
