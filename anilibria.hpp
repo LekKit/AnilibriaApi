@@ -71,8 +71,8 @@ namespace AniAPI {
 
     class Poster {
     public:
-        uint32_t timestamp{};
         std::string url;
+        uint32_t timestamp{};
 
         Poster() = default;
         Poster(std::string _url, uint32_t _ts) : url(std::move(_url)),
@@ -325,12 +325,11 @@ namespace AniAPI {
     class Schedule{
     public:
         std::vector<Title> list;
-
         uint8_t day;
 
         Schedule() = default;
 
-        Schedule(uint8_t _day, std::vector<Title> _list) : day(_day), list(std::move(_list))
+        Schedule(uint8_t _day, std::vector<Title> _list) : list(std::move(_list)), day(_day)
         {}
 
         static Schedule from_json(JSONProvider &json) {
